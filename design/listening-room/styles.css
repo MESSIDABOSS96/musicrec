@@ -1,0 +1,346 @@
+/* =========================================================================
+   LISTENING ROOM
+   Refactor of "Listening Room v2.dc.html". Visual output is unchanged;
+   every value below is carried over from the source.
+
+   Authored at 390x844. Values are absolute px in that coordinate space.
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   TOKENS
+   ------------------------------------------------------------------------- */
+
+:root {
+  /* Scene geometry -------------------------------------------------------- */
+  --scene-w: 390px;
+  --scene-h: 844px;
+
+  /* Surface --------------------------------------------------------------- */
+  --void: #060504;          /* page + scene ground */
+  --wall: #1b1512;          /* room wall reference tone */
+
+  /* Ink ------------------------------------------------------------------- */
+  --ink-warm: #f0d2a2;                    /* product name */
+  --ink-dim: rgba(240, 210, 168, 0.72);   /* eyebrow */
+  --ink-tagline: rgba(238, 208, 166, 0.8);
+
+  /* Ember — the single interactive accent ---------------------------------- */
+  --ember: #e0712c;
+  --ember-hover: #f3a366;
+  --ember-line: rgba(224, 113, 44, 0.78);
+  --ember-bloom-outer: rgba(224, 113, 44, 0.14);
+  --ember-bloom-inner: rgba(224, 113, 44, 0.08);
+  --ember-name-halo: rgba(255, 170, 80, 0.28);
+
+  /* Materials — multi-stop gradients kept whole, since each is one surface -- */
+  --material-glow-lamp-left: radial-gradient(
+    circle,
+    rgba(255, 176, 74, 0.14) 0%,
+    rgba(255, 150, 50, 0.05) 46%,
+    rgba(0, 0, 0, 0) 72%
+  );
+  --material-glow-lamp-right: radial-gradient(
+    circle,
+    rgba(255, 168, 66, 0.13) 0%,
+    rgba(255, 142, 44, 0.05) 46%,
+    rgba(0, 0, 0, 0) 72%
+  );
+  --material-glow-floor: radial-gradient(
+    circle,
+    rgba(255, 164, 70, 0.12) 0%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  --material-atmosphere: radial-gradient(
+    130% 88% at 46% 44%,
+    rgba(0, 0, 0, 0) 44%,
+    rgba(4, 2, 1, 0.34) 82%,
+    rgba(3, 2, 1, 0.6) 100%
+  );
+  --material-grain: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%22160%22><filter id=%22g%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22/></filter><rect width=%22160%22 height=%22160%22 filter=%22url(%23g)%22/></svg>');
+  --grain-opacity: 0.09;
+
+  /* Type ------------------------------------------------------------------ */
+  --font-body: 'Space Mono', monospace;
+  --font-display: 'Silkscreen', monospace;
+
+  /* LAYER STACK — gaps are intentional, for inserting layers later --------- */
+  --z-art: 10;
+  --z-identity: 30;
+  --z-lighting: 40;
+  --z-atmosphere: 50;
+  --z-grain: 60;
+}
+
+/* -------------------------------------------------------------------------
+   RESET
+   ------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--void);
+}
+
+h1, p { margin: 0; font-weight: inherit; }
+
+a {
+  color: var(--ember);
+  text-decoration: none;
+}
+a:hover { color: var(--ember-hover); }
+
+/* Centres the fixed-size scene on viewports wider/taller than the artboard.
+   At exactly 390x844 this is a no-op. */
+body {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* -------------------------------------------------------------------------
+   SCENE
+   ------------------------------------------------------------------------- */
+
+.scene {
+  position: relative;
+  width: var(--scene-w);
+  height: var(--scene-h);
+  overflow: hidden;
+  background: var(--void);
+  font-family: var(--font-body);
+}
+
+/* Full-bleed layer. Anything positioned inside works in scene coordinates. */
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* Only the identity layer is interactive; everything else is scenery. */
+.layer--art,
+.layer--lighting,
+.layer--atmosphere,
+.layer--grain { pointer-events: none; }
+
+.layer--art { z-index: var(--z-art); }
+.layer--identity { z-index: var(--z-identity); }
+.layer--lighting { z-index: var(--z-lighting); }
+.layer--atmosphere { z-index: var(--z-atmosphere); }
+.layer--grain { z-index: var(--z-grain); }
+
+/* -------------------------------------------------------------------------
+   ART
+   ------------------------------------------------------------------------- */
+
+.art-base {
+  position: absolute;
+  inset: 0;
+  background: url('assets/room2.png') center top / var(--scene-w) var(--scene-h) no-repeat;
+}
+
+/*
+  ART SLOTS
+  ---------
+  Each slot is one independently animatable illustration element.
+
+  Geometry comes from four custom properties so a slot can be positioned
+  without touching its rule. A slot renders nothing until BOTH its geometry
+  and its image are set — which is why the scene is currently unchanged.
+
+  To activate a slot once you have its cut-out PNG:
+      .art-slot--foreground-plants {
+        --x: 0px; --y: 640px; --w: 390px; --h: 204px;
+        --art: url('assets/foreground-plants.png');
+        display: block;
+      }
+  and remove that element from the base plate, or it will render twice.
+*/
+.art-slot {
+  position: absolute;
+  left: var(--x, 0);
+  top: var(--y, 0);
+  width: var(--w, 0);
+  height: var(--h, 0);
+  background-image: var(--art, none);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  /* Transforms should pivot on the element's own anchor, set per slot. */
+  transform-origin: var(--origin, 50% 50%);
+}
+
+/* Geometry not yet known — see README "Artwork slicing". */
+.art-slot--poster-wall,
+.art-slot--hanging-vines,
+.art-slot--foreground-plants { display: none; }
+
+/* Hanging things swing from the top; ground things pivot at their base. */
+.art-slot--hanging-vines { --origin: 50% 0%; }
+.art-slot--foreground-plants { --origin: 50% 100%; }
+
+/* Turntable — the one slot whose geometry carried over from the source. */
+.art-slot--turntable {
+  --x: 122px;
+  --y: 500px;
+  --w: 210px;
+  --h: 168px;
+}
+
+/* Platter and tonearm are separate so the record can spin without the
+   tonearm spinning with it. Both inherit the turntable's coordinate box. */
+.turntable-platter,
+.turntable-tonearm {
+  position: absolute;
+  left: var(--x, 0);
+  top: var(--y, 0);
+  width: var(--w, 0);
+  height: var(--h, 0);
+  background-image: var(--art, none);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+/* The platter spins about its own centre. */
+.turntable-platter { transform-origin: 50% 50%; }
+
+/* The tonearm pivots at its mount, not its centre — set --origin to the
+   pivot point once the cut-out exists. */
+.turntable-tonearm { transform-origin: var(--origin, 85% 15%); }
+
+/* -------------------------------------------------------------------------
+   IDENTITY
+   ------------------------------------------------------------------------- */
+
+.identity {
+  /* Overrides .layer's full-bleed inset: this is a positioned block. */
+  inset: auto;
+  left: 51px;
+  top: 372px;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.identity__eyebrow {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.identity__name {
+  margin-top: 9px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--ink-warm);
+  text-shadow:
+    0 0 12px var(--ember-name-halo),
+    0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.identity__tagline {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.28;
+  color: var(--ink-tagline);
+}
+
+/* -------------------------------------------------------------------------
+   CALL TO ACTION
+   ------------------------------------------------------------------------- */
+
+.cta {
+  /* Button reset — the source used a div; the rendered box is identical. */
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border-radius: 0;
+  font: inherit;
+  margin: 0;
+
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 13px;
+  border: 1.5px solid var(--ember-line);
+  box-shadow:
+    0 0 14px var(--ember-bloom-outer),
+    inset 0 0 12px var(--ember-bloom-inner);
+  color: var(--ember);
+  cursor: pointer;
+}
+
+.cta__arrow {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.cta__label {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--ink-warm);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------
+   LIGHTING
+   ------------------------------------------------------------------------- */
+
+.glow {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.glow--lamp-left {
+  left: 46px;
+  top: 46px;
+  width: 130px;
+  height: 130px;
+  background: var(--material-glow-lamp-left);
+}
+
+.glow--lamp-right {
+  left: 236px;
+  top: 78px;
+  width: 138px;
+  height: 138px;
+  background: var(--material-glow-lamp-right);
+}
+
+.glow--floor {
+  left: 78px;
+  top: 526px;
+  width: 96px;
+  height: 96px;
+  background: var(--material-glow-floor);
+}
+
+/* -------------------------------------------------------------------------
+   ATMOSPHERE + GRAIN
+   ------------------------------------------------------------------------- */
+
+.layer--atmosphere { background: var(--material-atmosphere); }
+
+.layer--grain {
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: var(--material-grain);
+}

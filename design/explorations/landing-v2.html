@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>musicrec — your taste is a place</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/*
+  Landing v2 — built directly from design/analysis/reference-teardown.md
+  findings on lofi-beach-sunset-street.png (Image B):
+
+  1. APERTURE — most of the frame is a dark near-plane (café doorway jambs,
+     lintel, shelf/table). The bright scene is a minority of the pixels.
+  2. VALUE SHELVES — depth planes as discrete, non-blending bands:
+     jambs L~0.08 → table L~0.16 → street L~0.23 → sea L~0.34 →
+     horizon sky L~0.43 → sky top deep red → sun L~0.93.
+  3. NO OUTLINES — shapes separate by value band, not strokes.
+  4. HUE WEDGE — ~80% warm red wedge (330–30°); small cool blue-grey
+     counterpoint (buses/buildings), always less saturated, and the cool
+     ramp bleeds saturation as it lightens while the warm ramp keeps it.
+  5. TEMPERATURE RAMP — darks rotate to crimson/maroon (#1B0506), lights
+     rotate to yellow (#FDF7B6). No greys, no black.
+  6. LIGHTS — flat pale-yellow cores (never white), bloom radius scaled
+     8:2:1 by importance, bloom hue-ramps yellow→orange→red→maroon.
+  7. Sun / vanishing point / focal point = one pixel (~57%, ~40%).
+  8. DETAIL clusters in foreground/midground; the focal area is flat.
+  9. GRAIN over everything, subtle.
+*/
+
+:root {
+  /* warm ramp (Image B measured) */
+  --w0: #1B0506;  /* L 0.00–0.05, crimson-black */
+  --w1: #250E11;  /* L 0.05–0.09, maroon */
+  --w2: #4D231C;  /* L 0.14–0.20 */
+  --w3: #7B2E25;  /* L 0.20–0.28 */
+  --w4: #A1423F;  /* L 0.28–0.38 */
+  --w5: #D15840;  /* L 0.38–0.50 */
+  --w6: #E4734D;  /* L 0.50–0.62 */
+  --w7: #F19F62;  /* L 0.62–0.78 */
+  --w8: #F4CBA4;  /* L 0.78+     */
+  /* emissive cores */
+  --core: #FDF7B6;
+  --core2: #FCE668;
+  /* cool counterpoint (unlit material; saturation falls as it lightens) */
+  --c0: #0D0F19;
+  --c1: #1E222D;
+  --c2: #2A3240;
+  --c3: #454F5F;
+  --c4: #555F6E;
+  /* copy */
+  --cream: #FFEAD1;
+  --cream-dim: rgba(255, 234, 209, 0.72);
+  --phosphor: #FFB000;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--w0);
+  color: var(--cream);
+  font-family: var(--serif);
+  overflow-x: hidden;
+}
+
+/* ================= HERO — café doorway onto the sunset street ================= */
+
+.scene {
+  position: relative;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* ---- SKY: discrete value shelves, not a smooth gradient (finding 2).
+   The visible sky occupies the aperture between the lintel (~8%) and the
+   horizon (~58%); lower shelves are progressively brighter and yellower,
+   upper shelves deepen to maroon/crimson. ---- */
+.sky {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    #3B1218 0%,
+    #571711 10%,
+    var(--w3) 20%,
+    var(--w4) 32%,
+    var(--w5) 44%,
+    var(--w6) 52%,
+    #F19F62 58%,          /* the bursting horizon band */
+    #F19F62 60%
+  );
+}
+/* upper-sky cloud columns — deep maroon, flat value band */
+.clouds {
+  position: absolute; inset: 0;
+  background:
+    /* fat storm column upper-right */
+    radial-gradient(ellipse 42% 12% at 74% 24%, rgba(59, 18, 23, 0.9), transparent 70%),
+    radial-gradient(ellipse 30% 9% at 88% 14%, rgba(37, 14, 17, 0.85), transparent 72%),
+    radial-gradient(ellipse 34% 10% at 18% 26%, rgba(59, 18, 23, 0.8), transparent 70%),
+    radial-gradient(ellipse 55% 8% at 45% 42%, rgba(122, 46, 37, 0.45), transparent 72%);
+  pointer-events: none;
+}
+
+/* ---- SUN — flat disc, no internal gradient, hard edge, bloom outside.
+   Position with the vanishing point: 57%, 40% of the bright aperture => in
+   full-frame terms approx 57% x, ~52% of aperture height... we anchor it
+   against the aperture box, not the viewport. ---- */
+.sun {
+  position: absolute;
+  left: 57%; top: 56.5%;
+  width: clamp(96px, 15vmin, 170px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 6;
+  background: var(--core);            /* flat core, L ~0.93 — never white */
+  /* hue-ramping bloom: yellow → orange → red → maroon, radius ~16% frame */
+  box-shadow:
+    0 0 0 0 rgba(253, 240, 170, 0.0),
+    0 0 3vmin 2vmin rgba(253, 240, 170, 0.85),
+    0 0 9vmin 5vmin rgba(251, 178, 108, 0.55),
+    0 0 18vmin 8vmin  rgba(229, 110, 66, 0.34),
+    0 0 30vmin 12vmin rgba(193, 80, 55, 0.22),
+    0 0 46vmin 16vmin rgba(135, 59, 52, 0.14);
+  animation: sunbreathe 10s ease-in-out infinite;
+}
+@keyframes sunbreathe {
+  50% {
+    box-shadow:
+      0 0 0 0 rgba(253, 240, 170, 0.0),
+      0 0 4vmin 2.6vmin rgba(253, 240, 170, 0.9),
+      0 0 10vmin 6vmin rgba(251, 178, 108, 0.6),
+      0 0 20vmin 9vmin  rgba(229, 110, 66, 0.38),
+      0 0 33vmin 13vmin rgba(193, 80, 55, 0.25),
+      0 0 50vmin 17vmin rgba(135, 59, 52, 0.16);
+  }
+}
+
+/* concentric "burst" rings just under the lintel, like the source's
+   backlit rows — discrete maroon ellipses on the bright band */
+.burst {
+  position: absolute;
+  left: 57%; top: 57.5%;
+  width: 30vmin; height: 8vmin;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1.6vmin 0 -0.9vmin rgba(122, 46, 37, 0.5);
+  pointer-events: none;
+}
+
+/* ---- SEA: single shelf below the horizon, sunpath converges on the sun ---- */
+.sea {
+  position: absolute;
+  left: 12%; right: 12%;
+  top: 60%; height: 9%;
+  z-index: 5;
+  background: linear-gradient(to bottom,
+    var(--w7) 0%,
+    var(--w5) 45%,
+    var(--w3) 100%);
+}
+.sunpath {
+  position: absolute;
+  left: 57%; top: 60%; height: 9%;
+  width: 6vmin;
+  transform: translateX(-50%);
+  opacity: 0.85;
+  z-index: 5;
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  background: repeating-linear-gradient(to bottom,
+    rgba(253, 247, 182, 0.95) 0 2px,
+    rgba(253, 247, 182, 0) 2px 7px);
+  animation: shimmer 5s linear infinite;
+}
+@keyframes shimmer { to { background-position: 0 14px; } }
+/* islands & masts — tiny dark accents on the horizon */
+.horizon-accents {
+  position: absolute;
+  left: 12%; right: 12%; top: 60%;
+  height: 1px;
+  background: rgba(37, 14, 17, 0.9);
+  box-shadow:
+    -18vmin 0 0 rgba(37, 14, 17, 0.9) ,
+    14vmin 0 0 rgba(37, 14, 17, 0.9);
+}
+.horizon-accents::before {
+  content: "";
+  position: absolute;
+  left: 34%; top: -1.5vmin;
+  border-left: 0.25vmin solid transparent;
+  border-right: 0.25vmin solid transparent;
+  border-bottom: 1.4vmin solid var(--cream);
+  opacity: 0.9;
+}
+
+/* ---- APERTURE: dark interior framing the bright scene.
+   Jambs left & right + lintel above + shelf/table below.
+   These are the darkest shell (L ~0.05–0.09, maroon-tinted, never black). ---- */
+.jamb {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 12%;
+  background: linear-gradient(to bottom, var(--w0), var(--w1) 55%, var(--w0));
+  z-index: 8;
+}
+.jamb.left  { left: 0;  box-shadow: 1.2vmin 0 2vmin rgba(27, 5, 6, 0.7); }
+.jamb.right { right: 0; box-shadow: -1.2vmin 0 2vmin rgba(27, 5, 6, 0.7); }
+/* vertical jamb texture: subtle boards (detail in the foreground, finding 9) */
+.jamb::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(to right,
+    transparent 0 2.2vmin,
+    rgba(27, 5, 6, 0.5) 2.2vmin 2.4vmin);
+  opacity: 0.5;
+}
+.lintel {
+  position: absolute;
+  left: 0; right: 0; top: 0; height: 8%;
+  background: var(--w1);
+  z-index: 9;
+}
+/* wooden surround lip (slightly lighter shell) */
+.lintel::after {
+  content: "";
+  position: absolute; left: 12%; right: 12%; top: 100%; height: 1.1vmin;
+  background: linear-gradient(to bottom, var(--w3), var(--w2));
+}
+
+/* ---- MIDGROUND: street with buses + tree, drawn in bands ---- */
+.street {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.street svg { position: absolute; left: 12%; right: 12%; bottom: 12%; width: 76%; height: 44%; }
+
+/* ---- HANGING BULBS: flat cores, small bloom (importance-scaled ~2:8) ---- */
+.bulbs {
+  position: absolute; left: 12%; right: 12%; top: 0;
+  width: 76%; height: 30%;
+  z-index: 7;
+  pointer-events: none;
+  animation: sway 8s ease-in-out infinite;
+  transform-origin: 50% 0;
+}
+@keyframes sway { 50% { transform: rotate(0.3deg); } }
+.bulb { fill: var(--core); filter: drop-shadow(0 0 1.6vmin rgba(253, 240, 170, 0.95)) drop-shadow(0 0 4vmin rgba(241, 159, 98, 0.6)); }
+.bulb.sml { fill: var(--core2); filter: drop-shadow(0 0 1vmin rgba(252, 230, 104, 0.9)) drop-shadow(0 0 2.4vmin rgba(241, 159, 98, 0.5)); }
+
+/* ---- FOREGROUND SHELF + CUPS: the occupied near-plane.
+   L ~0.09–0.17, warm but dim; grain & wood rings = foreground detail. ---- */
+.shelf {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 12%;
+  background: linear-gradient(to bottom,
+    var(--w2) 0%,
+    var(--w1) 30%,
+    var(--w0) 100%);
+  z-index: 9;
+  border-top: 0.8vmin solid var(--w3);
+}
+/* long amber wash of reflected sunset across the wood */
+.shelf::before {
+  content: "";
+  position: absolute;
+  left: 30%; top: 0; bottom: 0; width: 34%;
+  background: linear-gradient(to bottom,
+    rgba(241, 159, 98, 0.5), rgba(209, 88, 64, 0.25) 40%, transparent 85%);
+  transform: skewX(28deg);
+  filter: blur(2px);
+}
+/* wood grain rings — foreground detail density */
+.shelf::after {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 6vmin 1.4vmin at 72% 60%, transparent 55%, rgba(27,5,6,0.55) 60%, transparent 66%),
+    radial-gradient(ellipse 4vmin 1vmin at 71% 62%, transparent 55%, rgba(27,5,6,0.5) 60%, transparent 66%),
+    radial-gradient(ellipse 5vmin 1.2vmin at 30% 68%, transparent 55%, rgba(27,5,6,0.5) 60%, transparent 66%),
+    repeating-linear-gradient(172deg,
+      rgba(27, 5, 6, 0.4) 0 1px,
+      transparent 1px 9px);
+  opacity: 0.8;
+}
+/* cups: pale paper (cool-lit) with tan sleeve; lids catch amber light */
+.cups {
+  position: absolute;
+  bottom: 1%;
+  height: 24%;
+  z-index: 10;
+  pointer-events: none;
+}
+.cups svg { height: 100%; }
+.cups.left  { left: 20%; }
+.cups.right { left: 48%; }
+
+/* ---- HORIZONTAL VIGNETTE: both edges fall to ~0.10 (finding: col L peaks
+   at x≈0.55). Sits above the scene, below the text. ---- */
+.vignette {
+  position: absolute; inset: 0;
+  z-index: 11;
+  pointer-events: none;
+  background: radial-gradient(ellipse 120% 95% at 50% 46%,
+    transparent 52%,
+    rgba(27, 5, 6, 0.55) 78%,
+    rgba(27, 5, 6, 0.85) 98%);
+}
+
+/* ---- GRAIN over everything, measured amplitude ~0.005 (visible, subtle) ---- */
+.grain {
+  position: absolute;
+  inset: -50%;
+  z-index: 12;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.09;
+  animation: grainshift 1.1s steps(3) infinite;
+}
+@keyframes grainshift {
+  33% { transform: translate(-1.5%, 1%); }
+  66% { transform: translate(1%, -1.5%); }
+}
+
+/* ============ COPY ============ */
+
+.copy {
+  position: absolute;
+  z-index: 20;
+  left: clamp(1.5rem, 16vw, 18rem);   /* sits inside the aperture, right of the left jamb */
+  right: clamp(1.5rem, 14vw, 20rem);
+  bottom: clamp(30%, 33vh, 36%);
+  max-width: 30rem;
+}
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--phosphor);
+  text-shadow: 0 0 10px rgba(255, 176, 0, 0.7);
+  margin-bottom: 1rem;
+}
+h1 {
+  font-size: clamp(2.3rem, 6.6vw, 4.4rem);
+  line-height: 1.04;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  color: var(--cream);
+  text-shadow: 0 2px 26px rgba(27, 5, 6, 0.6);
+  margin-bottom: 1rem;
+}
+h1 em { font-style: italic; color: #FFD9A0; }
+.sub {
+  font-size: clamp(0.98rem, 2.2vw, 1.15rem);
+  line-height: 1.55;
+  color: var(--cream-dim);
+  max-width: 27rem;
+  margin-bottom: 1.8rem;
+  text-shadow: 0 1px 16px rgba(27, 5, 6, 0.65);
+}
+.cta {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--w0);
+  background: linear-gradient(to bottom, var(--core2), var(--phosphor));
+  padding: 0.95rem 1.7rem;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow:
+    0 0 18px rgba(255, 176, 0, 0.5),
+    0 0 55px rgba(255, 176, 0, 0.28),
+    inset 0 1px 0 rgba(253, 247, 182, 0.7);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.cta:hover, .cta:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 26px rgba(255, 176, 0, 0.75),
+    0 0 80px rgba(255, 176, 0, 0.38),
+    inset 0 1px 0 rgba(253, 247, 182, 0.8);
+}
+.cta:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; }
+.cta-note {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  margin-top: 0.85rem;
+}
+.wordmark {
+  position: absolute;
+  z-index: 20;
+  top: 11%;
+  left: clamp(1.5rem, 16vw, 18rem);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.32em;
+  color: var(--cream);
+  text-shadow: 0 0 12px rgba(255, 200, 110, 0.5);
+}
+
+/* ============ NIGHT SECTION (unchanged concept, tuned to ramp) ============ */
+
+.night {
+  position: relative;
+  background: linear-gradient(to bottom,
+    var(--w1) 0%, var(--w0) 30%, #120408 100%);
+  padding: clamp(5rem, 14vh, 9rem) clamp(1.5rem, 16vw, 18rem) clamp(4rem, 10vh, 7rem);
+  overflow: hidden;
+}
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--core);
+  box-shadow:
+    0 0 10px 3px rgba(253, 240, 170, 0.5),
+    0 0 34px 9px rgba(241, 159, 98, 0.22);
+  animation: orbdrift 11s ease-in-out infinite;
+}
+.orb.dim { opacity: 0.32; filter: blur(1px); }
+@keyframes orbdrift { 50% { transform: translate(4px, -9px); } }
+.night-inner { position: relative; z-index: 2; max-width: 34rem; }
+.night h2 {
+  font-size: clamp(1.7rem, 4.4vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1.14;
+  text-wrap: balance;
+  margin-bottom: 2.6rem;
+}
+.night h2 em { font-style: italic; color: #FFD9A0; }
+.steps { display: flex; flex-direction: column; gap: 1.9rem; list-style: none; }
+.steps li { display: grid; grid-template-columns: auto 1fr; gap: 1.1rem; align-items: baseline; }
+.step-key {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--phosphor);
+  text-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
+  white-space: nowrap;
+}
+.steps h3 { font-size: 1.08rem; margin-bottom: 0.3rem; color: var(--cream); }
+.steps p { font-size: 0.96rem; line-height: 1.55; color: var(--cream-dim); max-width: 26rem; }
+footer {
+  position: relative;
+  z-index: 2;
+  margin-top: clamp(4rem, 10vh, 7rem);
+  padding-top: 1.6rem;
+  border-top: 1px solid rgba(255, 234, 209, 0.14);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 234, 209, 0.45);
+}
+
+@media (max-width: 640px) {
+  .jamb, .jamb::after { width: 6%; }
+  .sea, .street svg, .bulbs, .lintel::after { left: 6%; right: 6%; width: 88%; }
+  .bulbs { width: 88%; }
+  .copy, .night, .wordmark { left: auto; right: auto; }
+  .copy { left: 8%; right: 8%; }
+  .wordmark { left: 8%; }
+  .night { padding-left: 2rem; padding-right: 2rem; }
+  .cups.left { left: 12%; }
+  .cups.right { left: 46%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sun, .sunpath, .bulbs, .grain, .orb { animation: none; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+
+<header class="scene">
+  <div class="sky"></div>
+  <div class="clouds"></div>
+  <div class="burst"></div>
+  <div class="sun"></div>
+
+  <div class="sea"></div>
+  <div class="sunpath"></div>
+  <div class="horizon-accents"></div>
+
+  <!-- midground street: buses, car, tree canopy, lamp post.
+       Cool planes (buses) sit in low-saturation blue-grey bands; the street
+       floor is a mid warm shelf. No strokes — value bands do the separating. -->
+  <div class="street">
+    <svg viewBox="0 0 760 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <!-- street floor: mid warm shelf, apex just below the sea band -->
+      <polygon points="180,320 400,200 480,200 690,320" fill="#4D231C"/>
+      <polygon points="250,320 432,200 448,200 380,320" fill="#7B2E25" opacity="0.7"/>
+      <!-- boardwalk kerb lines converge on the same point -->
+      <polygon points="60,320 396,200 405,200 190,320" fill="#7B2E25"/>
+      <polygon points="700,320 484,200 493,200 760,320" fill="#7B2E25"/>
+
+      <!-- BEACH BUS (cool, desaturated — unlit material catching ambient).
+           Big rounded front, exactly like the reference. -->
+      <g>
+        <path d="M -10 320 L -10 150 Q -10 128 14 126 L 210 118 Q 250 116 256 150 L 260 320 Z" fill="#2A3240"/>
+        <!-- roof cap catching the light -->
+        <path d="M -10 150 Q -10 128 14 126 L 210 118 Q 250 116 256 150 L 256 162 L -10 168 Z" fill="#555F6E"/>
+        <!-- windshield band -->
+        <path d="M 4 178 L 252 170 L 252 226 L 4 232 Z" fill="#0D0F19"/>
+        <path d="M 4 178 L 252 170 L 252 184 L 4 192 Z" fill="#F19F62" opacity="0.55"/>
+        <path d="M 90 176 L 94 230 M 170 172 L 172 228" stroke="#2A3240" stroke-width="6"/>
+        <!-- panel seams + circular marks, as interior texture -->
+        <path d="M -10 260 L 260 254 M 60 232 L 60 320" stroke="#1E222D" stroke-width="3"/>
+        <circle cx="200" cy="282" r="14" fill="#1E222D"/>
+        <circle cx="200" cy="282" r="6" fill="#F19F62"/>
+        <circle cx="216" cy="252" r="5" fill="#F19F62"/>
+      </g>
+
+      <!-- second bus, deeper (paler, still cool) -->
+      <g>
+        <path d="M 400 320 L 430 200 Q 432 188 444 188 L 520 188 Q 532 188 532 200 L 532 320 Z" fill="#1E222D"/>
+        <rect x="436" y="196" width="34" height="22" fill="#0D0F19"/>
+        <rect x="478" y="196" width="24" height="22" fill="#0D0F19"/>
+      </g>
+
+      <!-- parked car, right -->
+      <path d="M 560 320 L 560 276 Q 560 262 576 260 L 636 258 Q 654 258 660 272 L 664 320 Z" fill="#0D0F19"/>
+
+      <!-- people silhouettes on the boardwalk, grounded near the buses -->
+      <g fill="#250E11">
+        <rect x="520" y="180" width="11" height="46" rx="5.5"/>
+        <circle cx="525.5" cy="173" r="6"/>
+        <rect x="544" y="188" width="10" height="40" rx="5"/>
+        <circle cx="549" cy="182" r="5.5"/>
+        <rect x="566" y="196" width="9" height="34" rx="4.5"/>
+        <circle cx="570.5" cy="191" r="5"/>
+        <rect x="588" y="202" width="8" height="30" rx="4"/>
+        <circle cx="592" cy="197" r="4.5"/>
+      </g>
+
+      <!-- lamp post -->
+      <g fill="#1B0506">
+        <polygon points="640,320 646,146 650,146 654,320"/>
+        <path d="M 648 166 Q 700 160 706 190 L 700 194 Q 692 172 648 176 Z"/>
+        <rect x="697" y="192" width="10" height="14" rx="3"/>
+      </g>
+      <!-- tree canopy, right, silhouette with amber rim -->
+      <g>
+        <path d="M 760 320 L 760 40 Q 700 30 676 66 Q 640 70 636 108 Q 596 120 606 160 Q 570 180 600 208 Q 580 240 620 248 Q 610 280 660 268 Q 700 300 760 260 Z" fill="#18080C"/>
+        <path d="M 600 208 Q 620 216 640 208 Q 630 230 606 228 Z" fill="#A1423F" opacity="0.5"/>
+        <path d="M 606 160 Q 630 168 646 158 Q 636 178 612 176 Z" fill="#A1423F" opacity="0.45"/>
+        <path d="M 636 108 Q 660 116 676 104 Q 666 126 642 124 Z" fill="#A1423F" opacity="0.4"/>
+      </g>
+      <!-- errands sign banner -->
+      <rect x="556" y="226" width="34" height="18" fill="#1B0506"/>
+      <rect x="560" y="231" width="26" height="3" fill="#7B2E25"/>
+      <rect x="560" y="237" width="18" height="3" fill="#7B2E25"/>
+    </svg>
+  </div>
+
+  <!-- hanging bulbs: kraft cables, flat cores, small glow -->
+  <svg class="bulbs" viewBox="0 0 760 240" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+    <path d="M 120 -10 Q 210 60 252 118" fill="none" stroke="#250E11" stroke-width="4"/>
+    <rect x="243" y="106" width="18" height="26" rx="6" fill="#250E11"/>
+    <circle cx="252" cy="144" r="24" fill="rgba(253, 240, 170, 0.35)"/>
+    <circle class="bulb" cx="252" cy="144" r="13" fill="#FDF7B6"/>
+
+    <path d="M 640 -10 Q 560 20 534 60" fill="none" stroke="#250E11" stroke-width="3.5"/>
+    <rect x="525" y="52" width="16" height="20" rx="5" fill="#250E11"/>
+    <circle cx="533" cy="82" r="17" fill="rgba(252, 230, 104, 0.3)"/>
+    <circle class="bulb sml" cx="533" cy="82" r="9" fill="#FCE668"/>
+
+    <!-- tiny bulbs riding the wire across the sun -->
+    <path d="M 200 150 Q 380 120 560 148" fill="none" stroke="#250E11" stroke-width="1.5" opacity="0.7"/>
+    <rect x="368" y="128" width="5" height="7" fill="#1B0506"/>
+    <rect x="497" y="140" width="5" height="8" fill="#1B0506"/>
+  </svg>
+
+  <!-- café table + coffee cups: the occupied foreground -->
+  <div class="shelf"></div>
+
+  <div class="cups left" aria-hidden="true">
+    <svg viewBox="0 0 120 200">
+      <path d="M 18 60 L 28 180 Q 29 190 40 190 L 80 190 Q 91 190 92 180 L 102 60 Z" fill="#F4CBA4"/>
+      <path d="M 22 118 L 98 118 L 94 160 L 26 160 Z" fill="#B58A52"/>
+      <ellipse cx="60" cy="58" rx="44" ry="12" fill="#F19F62"/>
+      <ellipse cx="60" cy="54" rx="40" ry="10" fill="#FFD9A0"/>
+      <ellipse cx="50" cy="54" rx="16" ry="5" fill="#F19F62"/>
+    </svg>
+  </div>
+  <div class="cups right" aria-hidden="true">
+    <svg viewBox="0 0 120 200">
+      <path d="M 18 60 L 28 180 Q 29 190 40 190 L 80 190 Q 91 190 92 180 L 102 60 Z" fill="#F4CBA4"/>
+      <path d="M 22 118 L 98 118 L 94 160 L 26 160 Z" fill="#8F6B3E"/>
+      <ellipse cx="60" cy="58" rx="44" ry="12" fill="#F19F62"/>
+      <ellipse cx="60" cy="54" rx="40" ry="10" fill="#FCE668"/>
+      <ellipse cx="62" cy="54" rx="18" ry="6" fill="#F4CBA4"/>
+    </svg>
+  </div>
+
+  <div class="lintel"></div>
+  <div class="jamb left"></div>
+  <div class="jamb right"></div>
+
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <p class="wordmark">musicrec</p>
+
+  <div class="copy">
+    <p class="eyebrow">Track 01 · Golden Hour</p>
+    <h1>Your taste is a <em>place</em>.</h1>
+    <p class="sub">
+      A living map of the music you love — that only grows when you go out
+      and listen. No feeds. No algorithmic mush. Just you, a coffee,
+      and a street that ends at the sea.
+    </p>
+    <a class="cta" href="#night">Start your map</a>
+    <p class="cta-note">3 minutes to your first constellation</p>
+  </div>
+</header>
+
+<section class="night" id="night">
+  <div aria-hidden="true">
+    <div class="orb"     style="left: 68%; top: 14%; width: 20px; height: 20px;"></div>
+    <div class="orb"     style="left: 78%; top: 30%; width: 13px; height: 13px; animation-delay: 2s;"></div>
+    <div class="orb dim" style="left: 60%; top: 40%; width: 9px;  height: 9px;  animation-delay: 4s;"></div>
+    <div class="orb"     style="left: 86%; top: 52%; width: 16px; height: 16px; animation-delay: 1s;"></div>
+    <div class="orb dim" style="left: 71%; top: 62%; width: 8px;  height: 8px;  animation-delay: 3s;"></div>
+    <div class="orb"     style="left: 58%; top: 76%; width: 12px; height: 12px; animation-delay: 5s;"></div>
+  </div>
+
+  <div class="night-inner">
+    <p class="eyebrow">Track 02 · After Dark</p>
+    <h2>Night falls, and your map becomes a <em>constellation</em>.</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-key">A / B</span>
+        <div>
+          <h3>Tell us who you'd keep</h3>
+          <p>A few minutes of choosing between two artists — adaptive,
+             never the same twice — and your starting map appears.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-key">&gt;&gt;</span>
+        <div>
+          <h3>Explore a direction</h3>
+          <p>Pick an artist you love and push outward. A few new names
+             surface just past the edge of what you know.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-key">REC</span>
+        <div>
+          <h3>Listen, then come back</h3>
+          <p>Play it in your own streaming app. Loved it, knew it, or
+             not for you — every honest answer grows the map.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <footer>
+    <span>musicrec — working title</span>
+    <span>design exploration v2 · apartment view</span>
+  </footer>
+</section>
+</html>

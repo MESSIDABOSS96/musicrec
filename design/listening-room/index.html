@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Fixed 390px viewport: the scene is authored at 390x844 and is not fluid. -->
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Listening Room</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!--
+  SCENE — authored at 390x844.
+
+  Layer stack, back to front (see styles.css "LAYER STACK" for z-index scale):
+    10  art         the room artwork + per-element art slots
+    30  identity    product name, tagline, primary action
+    40  lighting    lamp glows
+    50  atmosphere  vignette
+    60  grain       film grain
+
+  Every element intended for later animation carries a `data-actor`
+  attribute. That is the motion layer's addressing scheme — query
+  `[data-actor="vinyl"]` rather than reaching for a class name, so styling
+  and animation can change independently.
+-->
+<div class="scene" data-layer="scene">
+
+  <!-- ART ------------------------------------------------------------- -->
+  <div class="layer layer--art" data-layer="art">
+
+    <!--
+      Base plate. The complete room illustration, retouched so it carries no
+      product UI of its own — see README "The plate was retouched".
+      When layer-separated art lands, this becomes the plate with the
+      animatable elements REMOVED, and each slot below carries its own image.
+    -->
+    <div class="art-base" data-layer="room" data-actor="room"></div>
+
+    <!--
+      ART SLOTS — one per independently animatable illustration element.
+
+      Each is positioned but EMPTY, so it renders nothing and the scene is
+      pixel-identical to the source. Give a slot an image (see styles.css)
+      and it becomes a real, transformable element.
+
+      Only the turntable's geometry is known — it came through from the
+      source file. The others are display:none until their geometry is set
+      from the artwork; see README.md.
+    -->
+    <div class="art-slot art-slot--poster-wall" data-layer="poster-wall" data-actor="poster-wall"></div>
+    <div class="art-slot art-slot--hanging-vines" data-layer="hanging-vines" data-actor="hanging-vines"></div>
+
+    <div class="art-slot art-slot--turntable" data-layer="turntable" data-actor="turntable">
+      <div class="turntable-platter" data-actor="vinyl"></div>
+      <div class="turntable-tonearm" data-actor="tonearm"></div>
+    </div>
+
+    <div class="art-slot art-slot--foreground-plants" data-layer="foreground-plants" data-actor="foreground-plants"></div>
+  </div>
+
+  <!-- IDENTITY --------------------------------------------------------- -->
+  <div class="layer layer--identity identity" data-layer="identity" data-actor="identity">
+    <p class="identity__eyebrow" data-actor="eyebrow">Welcome to</p>
+    <h1 class="identity__name" data-actor="product-name">[PRODUCT NAME]</h1>
+    <p class="identity__tagline" data-actor="tagline">[SHORT TAGLINE]</p>
+
+    <button class="cta" type="button" data-layer="primary-action" data-actor="cta">
+      <span class="cta__arrow" aria-hidden="true">&#8594;</span>
+      <span class="cta__label">[PRIMARY ACTION]</span>
+    </button>
+  </div>
+
+  <!-- LIGHTING --------------------------------------------------------- -->
+  <div class="layer layer--lighting" data-layer="lighting">
+    <div class="glow glow--lamp-left" data-actor="glow-lamp-left"></div>
+    <div class="glow glow--lamp-right" data-actor="glow-lamp-right"></div>
+    <div class="glow glow--floor" data-actor="glow-floor"></div>
+  </div>
+
+  <!-- ATMOSPHERE ------------------------------------------------------- -->
+  <div class="layer layer--atmosphere" data-layer="atmosphere" data-actor="atmosphere"></div>
+
+  <!-- GRAIN ------------------------------------------------------------ -->
+  <div class="layer layer--grain" data-layer="grain" data-actor="grain"></div>
+
+</div>
+
+</body>
+</html>
