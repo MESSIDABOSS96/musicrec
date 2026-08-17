@@ -11,7 +11,10 @@ index.html                 markup + the layer map
 styles.css                 tokens, layer stack, components
 assets/room2.png           the room illustration, retouched (853x1844)
 assets/room2.original.png  the illustration as delivered — keep it
-tools/retouch-room2.py     the retouch, re-runnable
+assets/vinyl.png           the record, cut out and made whole
+assets/deck-over.png       what sits above the record and must not turn
+tools/retouch-room2.py     the text retouch, re-runnable
+tools/vinyl/               the record separation, re-runnable
 ```
 
 ---
@@ -32,8 +35,8 @@ artwork carries no product UI and needs no overlays.
 for each box in comments. It reads `room2.original.png`, so it can be re-run
 or adjusted; it needs numpy and Pillow, which the page itself does not.
 
-**Keep `room2.original.png`.** It is the only local copy of the delivered
-artwork, and this directory is not under version control.
+**Keep `room2.original.png`.** It is the delivered artwork, and the only
+input the retouch and the record separation can be re-derived from.
 
 The copy in the DOM is left as `[PRODUCT NAME]` / `[SHORT TAGLINE]` /
 `[PRIMARY ACTION]`, matching the design source. Product name is still an
@@ -62,10 +65,9 @@ work was structural:
 - **The CTA is a real `<button>`.** It was a `<div>`. It renders identically
   — the reset is in `.cta` — but it is now focusable, keyboard-operable, and
   has a visible focus ring.
-- **Grouped the artwork.** The room plate and the empty turntable placeholder
-  sit together in the art layer, so all scenery is in one layer and the UI
-  sits above it. Since the placeholder is empty and does not overlap the
-  identity block, the rendered result is unchanged.
+- **Grouped the artwork.** All scenery — the plate, the record layers, and
+  the empty slots for art not yet separated — sits in one art layer, with the
+  UI above it.
 
 Two additions that do not alter a screenshot: `cursor: pointer` on the CTA,
 and centring the fixed-size scene on viewports larger than the artboard (a
@@ -86,40 +88,66 @@ animation stay independent:
 | `atmosphere` | Vignette | **yes** |
 | `grain` | Film grain | **yes** |
 | `room` | Base art plate | **yes** |
-| `turntable` | Turntable group — geometry known (122, 500, 210×168) | needs art |
-| `vinyl` | Platter, pivots at its own centre | needs art |
-| `tonearm` | Tonearm, pivots at its mount | needs art |
+| `vinyl` | The record. Pivots on the spindle | **yes — see below** |
+| `deck-over` | Tonearm, headshell, spindle, case edge, glare. Static | **yes** |
 | `poster-wall` | Poster wall | needs art + geometry |
 | `hanging-vines` | Hanging plants, pivot at top | needs art + geometry |
 | `foreground-plants` | Foreground plants, pivot at base | needs art + geometry |
 
-Transform origins are already set per element to the pivot each one should
-actually rotate about — vines swing from the top, foreground plants from
-their base, the record spins about its centre.
+Transform origins are set per element to the pivot each one should actually
+rotate about — vines swing from the top, foreground plants from their base,
+the record about its spindle.
 
-### Artwork slicing — the real blocker
+## The record is separated
 
-The vinyl, plants, vines, and posters are **painted into `room2.png` as a
-single flat image.** No amount of DOM structure makes regions of one raster
-independently animatable; they have to exist as separate images.
+`room2.png` still holds the whole room, record included. `vinyl.png` is the
+disc alone and sits on top of it; `deck-over.png` holds everything that must
+stay put while the disc turns.
 
-So the honest state is: the slots are built, positioned, and documented, but
-five of them are inert until the artwork is exported in layers. What's needed:
+```
+room2.png  ->  vinyl.png  ->  deck-over.png  ->  the HTML/UI layers
+```
 
-1. `poster-wall.png`
-2. `hanging-vines.png`
-3. `turntable.png` (the deck body, minus platter and tonearm)
-4. `vinyl.png` (the record — a square cut-out, so rotation stays centred)
-5. `tonearm.png`
-6. `foreground-plants.png`
-7. `room-plate.png` — the room with all six of the above **removed**
+The plate keeps its painted record underneath on purpose. A rotation about
+the record's own axis leaves the silhouette exactly where it is, so the disc
+covers its own baked copy at every angle, and the soft rim blends into
+identical colour instead of against bare deck. Nothing has to be cut out of
+the plate, and a seam at the rim is not possible.
 
-Each as a transparent PNG on the same 390×844 canvas, so it drops in without
-repositioning. Then, per slot in `styles.css`, set `--x/--y/--w/--h` and
-`--art`, switch `display` back on, and point `.art-base` at `room-plate.png`.
-Keeping the current full plate *and* adding slices renders those elements
-twice — that is the one trap here.
+Three things had to be reconstructed to make the disc whole: the surface
+under the tonearm and headshell, the surface under the case's rear edge —
+which crosses the far rim and is easy to miss — and the label under the
+spindle. The fill copies from the same radius at a different angle, which is
+the one method that keeps grooves and label edges continuous on a record.
 
-If layered export isn't possible, the fallback is masking regions out of the
-single plate with `clip-path`, which works for small motions but tears as
-soon as an element moves far enough to expose the hole behind it.
+The glare is not painted into the disc. It is a separate light layer inside
+`deck-over.png`, semi-transparent, so the record still shows through it and
+will pass under it rather than carrying it around. Light does not orbit.
+
+`tools/vinyl/` regenerates both assets from `assets/room2.png`; the fitted
+ellipse is a constant in `split_vinyl.py` and `fit_ellipse.py` is what
+produced it. Needs numpy and Pillow.
+
+### Before animating, know these three things
+
+- **The rim is the axis, not the label.** The painted label sits about 3px
+  off the centre of the ellipse the rim traces. Rotation has to pivot on the
+  rim's centre or the silhouette walks off its baked copy — which means the
+  label will wobble very slightly as it turns. The illustration, not the
+  maths, is what is inconsistent here.
+- **A 2D `rotate()` is wrong.** The disc is drawn in perspective. Spinning
+  the ellipse in the image plane tumbles it like a flipped coin. The
+  rotation has to be conjugated through the foreshortening:
+
+  ```css
+  transform-origin: 221.59px 566.94px;   /* the spindle */
+  transform: rotate(-3.25deg) scaleY(0.4016) rotate(var(--spin))
+             scaleY(2.49) rotate(3.25deg);
+  ```
+
+  where 0.4016 is the measured B/A and −3.25° the ellipse's tilt.
+- **The spin may barely read.** Grooves are concentric and the label is
+  nearly featureless, so a geometrically perfect rotation is close to
+  invisible. What normally sells a spinning record is the sweeping highlight,
+  and that highlight has to stay still. Consider giving the label an
+  asymmetric mark before judging the result.

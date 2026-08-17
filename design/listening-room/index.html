@@ -55,13 +55,24 @@
     -->
     <div class="art-slot art-slot--poster-wall" data-layer="poster-wall" data-actor="poster-wall"></div>
     <div class="art-slot art-slot--hanging-vines" data-layer="hanging-vines" data-actor="hanging-vines"></div>
-
-    <div class="art-slot art-slot--turntable" data-layer="turntable" data-actor="turntable">
-      <div class="turntable-platter" data-actor="vinyl"></div>
-      <div class="turntable-tonearm" data-actor="tonearm"></div>
-    </div>
-
     <div class="art-slot art-slot--foreground-plants" data-layer="foreground-plants" data-actor="foreground-plants"></div>
+
+    <!--
+      THE RECORD — separated out of the plate so it can turn on its own.
+
+        art-base    the room, with the record still painted into it
+        vinyl       the disc alone, complete: what sat on top of it removed
+                    and the surface underneath reconstructed
+        deck-over   what must NOT turn — tonearm, headshell, spindle, the
+                    case's rear edge across the far rim, and the lamp glare
+
+      The plate keeps its painted record underneath on purpose. A correct spin
+      leaves the silhouette exactly where it is, so the disc covers its own
+      baked copy at every angle, and the soft rim blends into identical colour
+      rather than against bare deck. Nothing here moves yet.
+    -->
+    <div class="art-plate art-plate--vinyl" data-layer="vinyl" data-actor="vinyl"></div>
+    <div class="art-plate art-plate--deck-over" data-layer="deck-over" data-actor="deck-over"></div>
   </div>
 
   <!-- IDENTITY --------------------------------------------------------- -->

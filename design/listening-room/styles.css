@@ -183,34 +183,35 @@ body {
 .art-slot--hanging-vines { --origin: 50% 0%; }
 .art-slot--foreground-plants { --origin: 50% 100%; }
 
-/* Turntable — the one slot whose geometry carried over from the source. */
-.art-slot--turntable {
-  --x: 122px;
-  --y: 500px;
-  --w: 210px;
-  --h: 168px;
-}
-
-/* Platter and tonearm are separate so the record can spin without the
-   tonearm spinning with it. Both inherit the turntable's coordinate box. */
-.turntable-platter,
-.turntable-tonearm {
+/*
+  RECORD LAYERS
+  -------------
+  Full-bleed plates registered to the same box as the room art, so they need
+  no positioning of their own — each PNG is authored on the full canvas and
+  lands where it was cut from.
+*/
+.art-plate {
   position: absolute;
-  left: var(--x, 0);
-  top: var(--y, 0);
-  width: var(--w, 0);
-  height: var(--h, 0);
-  background-image: var(--art, none);
+  inset: 0;
   background-repeat: no-repeat;
-  background-size: 100% 100%;
+  background-position: center top;
+  background-size: var(--scene-w) var(--scene-h);
 }
 
-/* The platter spins about its own centre. */
-.turntable-platter { transform-origin: 50% 50%; }
+.art-plate--vinyl {
+  background-image: url('assets/vinyl.png');
 
-/* The tonearm pivots at its mount, not its centre — set --origin to the
-   pivot point once the cut-out exists. */
-.turntable-tonearm { transform-origin: var(--origin, 85% 15%); }
+  /*
+    The spindle, measured from the artwork — the record's actual axis, and
+    the centre of the ellipse its rim traces. Rotation must pivot exactly
+    here or the silhouette walks off the copy baked into the plate.
+  */
+  transform-origin: 221.59px 566.94px;
+}
+
+.art-plate--deck-over {
+  background-image: url('assets/deck-over.png');
+}
 
 /* -------------------------------------------------------------------------
    IDENTITY
