@@ -11,18 +11,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="styles.css">
+<script src="scroll.js" defer></script>
 </head>
 <body>
+
+<!--
+  SCROLL TRACK — the page's only scrollable extent. The stage inside it is
+  sticky, so the scene never leaves the screen; scrolling the track is the
+  camera's playhead. scroll.js maps track progress 0..1 onto the shot.
+-->
+<div class="scroll-track" data-layer="scroll-track">
+<div class="stage" data-layer="stage">
 
 <!--
   SCENE — authored at 390x844.
 
   Layer stack, back to front (see styles.css "LAYER STACK" for z-index scale):
-    10  art         the room artwork + per-element art slots
-    30  identity    product name, tagline, primary action
-    40  lighting    lamp glows
-    50  atmosphere  vignette
+    10  art         the room artwork + per-element art slots   } the world —
+    30  identity    product name, tagline, primary action      }   art and
+    40  lighting    lamp glows                                 }   lighting
+    50  atmosphere  vignette                                       ride the
+    52  shelf-dark  the dark of the shelf, for the shot's end      camera
+    55  story       the scroll copy, one line at a time
+    56  finale      name + action again, at the end of the shot
+    57  scroll-cue  the invitation to scroll
     60  grain       film grain
+
+  The camera (scroll.js) transforms art + lighting only: they are the room.
+  Identity, story, finale, and cue are UI and stay in screen space; the
+  vignette and grain are the lens and never move at all.
 
   Every element intended for later animation carries a `data-actor`
   attribute. That is the motion layer's addressing scheme — query
@@ -35,44 +52,59 @@
   <div class="layer layer--art" data-layer="art">
 
     <!--
-      Base plate. The complete room illustration, retouched so it carries no
-      product UI of its own — see README "The plate was retouched".
-      When layer-separated art lands, this becomes the plate with the
-      animatable elements REMOVED, and each slot below carries its own image.
+      Base plate. The room illustration, retouched (README "The plate was
+      retouched") and prepared for motion: behind every swaying element's
+      edges the background has been rebuilt, so nothing tears when they
+      move. tools/scenery/separate.py produces it.
     -->
     <div class="art-base" data-layer="room" data-actor="room"></div>
 
     <!--
       ART SLOTS — one per independently animatable illustration element.
+      Geometry and pivots come from tools/scenery/separate.py; each pivot
+      is the point where the plant actually attaches, so sway reads as
+      hanging or rooted rather than floating.
 
-      Each is positioned but EMPTY, so it renders nothing and the scene is
-      pixel-identical to the source. Give a slot an image (see styles.css)
-      and it becomes a real, transformable element.
-
-      Only the turntable's geometry is known — it came through from the
-      source file. The others are display:none until their geometry is set
-      from the artwork; see README.md.
+      poster-wall is still an empty placeholder (no art, renders nothing).
+      The vines hang BEHIND the record layers; the foreground plants and
+      the flame sit in front of them, after deck-over below.
     -->
     <div class="art-slot art-slot--poster-wall" data-layer="poster-wall" data-actor="poster-wall"></div>
-    <div class="art-slot art-slot--hanging-vines" data-layer="hanging-vines" data-actor="hanging-vines"></div>
-    <div class="art-slot art-slot--foreground-plants" data-layer="foreground-plants" data-actor="foreground-plants"></div>
+    <div class="art-slot art-slot--vine-window" data-layer="vine-window" data-actor="vine-window"></div>
+    <div class="art-slot art-slot--vine-wall" data-layer="vine-wall" data-actor="vine-wall"></div>
 
     <!--
       THE RECORD — separated out of the plate so it can turn on its own.
 
-        art-base    the room, with the record still painted into it
-        vinyl       the disc alone, complete: what sat on top of it removed
-                    and the surface underneath reconstructed
-        deck-over   what must NOT turn — tonearm, headshell, spindle, the
-                    case's rear edge across the far rim, and the lamp glare
+        art-base     the room, with the record still painted into it
+        vinyl        the turning surface: the disc made rotationally
+                     symmetric plus two small marks that carry the motion
+        vinyl-light  the disc's sheen and shading, static — light belongs
+                     to the room and must not orbit the record
+        deck-over    what must NOT turn — tonearm, headshell, spindle, the
+                     case's rear edge across the far rim, and the lamp glare
 
       The plate keeps its painted record underneath on purpose. A correct spin
       leaves the silhouette exactly where it is, so the disc covers its own
       baked copy at every angle, and the soft rim blends into identical colour
-      rather than against bare deck. Nothing here moves yet.
+      rather than against bare deck. The rim itself never turns: the rotating
+      layer fades out just inside it, and the painted rim, its glints, and the
+      disc's edge thickness stay in the plate.
     -->
     <div class="art-plate art-plate--vinyl" data-layer="vinyl" data-actor="vinyl"></div>
+    <div class="art-plate art-plate--vinyl-light" data-layer="vinyl-light" data-actor="vinyl-light"></div>
     <div class="art-plate art-plate--deck-over" data-layer="deck-over" data-actor="deck-over"></div>
+
+    <!--
+      DRAWN LOOPS — frame animation, not transforms. Each is an opaque
+      patch whose border pixels are the plate's own, so no seam care.
+    -->
+    <div class="art-slot art-slot--candle-flame" data-layer="candle-flame" data-actor="candle-flame"></div>
+    <div class="art-slot art-slot--eq-meter" data-layer="eq-meter" data-actor="eq-meter"></div>
+
+    <!-- Foreground foliage sits in front of the record player. -->
+    <div class="art-slot art-slot--plant-right" data-layer="plant-right" data-actor="plant-right"></div>
+    <div class="art-slot art-slot--plant-left" data-layer="plant-left" data-actor="plant-left"></div>
   </div>
 
   <!-- IDENTITY --------------------------------------------------------- -->
@@ -97,9 +129,41 @@
   <!-- ATMOSPHERE ------------------------------------------------------- -->
   <div class="layer layer--atmosphere" data-layer="atmosphere" data-actor="atmosphere"></div>
 
+  <!--
+    SHELF DARK — the end of the shot. As the camera pushes into the shelf,
+    this brings up the dark inside it so the finale reads against near-black
+    rather than against soft, over-enlarged pixels. scroll.js drives opacity.
+  -->
+  <div class="layer layer--shelf-dark" data-layer="shelf-dark" data-actor="shelf-dark"></div>
+
+  <!--
+    STORY — the scroll copy. Minimal: one short line at a time, surfacing
+    and dissolving as the camera moves. The lines are PLACEHOLDER copy
+    (written against SPEC v0.2's finite-canon idea) — swap freely.
+  -->
+  <div class="layer layer--story" data-layer="story">
+    <p class="story-line story-line--1" data-actor="story-line-1">every record worth hearing</p>
+    <p class="story-line story-line--2" data-actor="story-line-2">is somewhere on this shelf</p>
+  </div>
+
+  <!-- FINALE — the identity again, where the shot ends. ------------------ -->
+  <div class="layer layer--finale finale" data-layer="finale" data-actor="finale">
+    <h2 class="finale__name">[PRODUCT NAME]</h2>
+    <button class="cta" type="button" data-actor="finale-cta">
+      <span class="cta__arrow" aria-hidden="true">&#8594;</span>
+      <span class="cta__label">[PRIMARY ACTION]</span>
+    </button>
+  </div>
+
+  <!-- SCROLL CUE --------------------------------------------------------- -->
+  <p class="scroll-cue" data-layer="scroll-cue" data-actor="scroll-cue">scroll<span class="scroll-cue__chevron" aria-hidden="true">&#8595;</span></p>
+
   <!-- GRAIN ------------------------------------------------------------ -->
   <div class="layer layer--grain" data-layer="grain" data-actor="grain"></div>
 
+</div>
+
+</div>
 </div>
 
 </body>

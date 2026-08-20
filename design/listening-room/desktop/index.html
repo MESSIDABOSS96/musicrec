@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listening Room — Desktop</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+<script src="scroll.js" defer></script>
+</head>
+<body>
+
+<!--
+  SCROLL TRACK — the page's only scrollable extent. The stage inside it is
+  sticky, so the scene never leaves the screen; scrolling the track is the
+  camera's playhead (scroll.js). The stage also clips the scaled scene's
+  phantom layout box, which body { overflow: hidden } used to do.
+-->
+<div class="scroll-track" data-layer="scroll-track">
+<div class="stage" data-layer="stage">
+
+<!--
+  SCENE — authored at 1536x1024 (scene px == artwork px), scaled as one
+  unit to fit the viewport. Same architecture as the mobile page one
+  directory up: a rebuilt plate, cut layers stacked at their painted
+  depth, drawn loops for the flames and the meter, live CSS light on top.
+  Every animatable element carries data-actor; address motion against
+  those, not class names.
+
+  The camera (scroll.js) transforms the art + lighting layers only: they
+  are the room. Identity, story, finale, and cue are UI and stay in screen
+  space; the vignette and grain are the lens and never move.
+-->
+<div class="scene" data-layer="scene">
+
+  <!-- ART ------------------------------------------------------------- -->
+  <div class="layer layer--art" data-layer="art">
+
+    <!-- The room, background rebuilt behind every swaying silhouette. -->
+    <div class="art-base" data-layer="room" data-actor="room"></div>
+
+    <!-- Wall foliage, behind the record player. -->
+    <div class="art-slot art-slot--vine-left" data-layer="vine-left" data-actor="vine-left"></div>
+    <div class="art-slot art-slot--shelf-fern" data-layer="shelf-fern" data-actor="shelf-fern"></div>
+    <div class="art-slot art-slot--vine-center" data-layer="vine-center" data-actor="vine-center"></div>
+    <div class="art-slot art-slot--vine-right" data-layer="vine-right" data-actor="vine-right"></div>
+    <div class="art-slot art-slot--vine-far-right" data-layer="vine-far-right" data-actor="vine-far-right"></div>
+
+    <!--
+      THE RECORD — same three-layer split as mobile (see ../README.md):
+      the symmetrized surface turns, its sheen holds still above it, and
+      the tonearm assembly caps the stack.
+    -->
+    <div class="art-plate art-plate--vinyl" data-layer="vinyl" data-actor="vinyl"></div>
+    <div class="art-plate art-plate--vinyl-light" data-layer="vinyl-light" data-actor="vinyl-light"></div>
+    <div class="art-plate art-plate--deck-over" data-layer="deck-over" data-actor="deck-over"></div>
+
+    <!-- DRAWN LOOPS — frame animation, opaque patches, no seam care. -->
+    <div class="art-slot art-slot--flame-main" data-layer="flame-main" data-actor="flame-main"></div>
+    <div class="art-slot art-slot--flame-shelf" data-layer="flame-shelf" data-actor="flame-shelf"></div>
+    <div class="art-slot art-slot--eq-meter" data-layer="eq-meter" data-actor="eq-meter"></div>
+
+    <!-- Foreground foliage, in front of the furniture. -->
+    <div class="art-slot art-slot--plant-mid" data-layer="plant-mid" data-actor="plant-mid"></div>
+    <div class="art-slot art-slot--plant-cab" data-layer="plant-cab" data-actor="plant-cab"></div>
+    <div class="art-slot art-slot--plant-right" data-layer="plant-right" data-actor="plant-right"></div>
+    <div class="art-slot art-slot--plant-left" data-layer="plant-left" data-actor="plant-left"></div>
+  </div>
+
+  <!-- IDENTITY --------------------------------------------------------- -->
+  <div class="layer layer--identity identity" data-layer="identity" data-actor="identity">
+    <p class="identity__eyebrow" data-actor="eyebrow">Welcome to</p>
+    <h1 class="identity__name" data-actor="product-name">[PRODUCT NAME]</h1>
+    <p class="identity__tagline" data-actor="tagline">[SHORT TAGLINE]</p>
+
+    <button class="cta" type="button" data-layer="primary-action" data-actor="cta">
+      <span class="cta__arrow" aria-hidden="true">&#8594;</span>
+      <span class="cta__label">[PRIMARY ACTION]</span>
+    </button>
+  </div>
+
+  <!-- LIGHTING --------------------------------------------------------- -->
+  <div class="layer layer--lighting" data-layer="lighting">
+    <div class="glow glow--lamp-dome" data-actor="glow-lamp-dome"></div>
+    <div class="glow glow--lamp-cage" data-actor="glow-lamp-cage"></div>
+    <div class="glow glow--candle-main" data-actor="glow-candle-main"></div>
+    <div class="glow glow--candle-shelf" data-actor="glow-candle-shelf"></div>
+  </div>
+
+  <!-- ATMOSPHERE ------------------------------------------------------- -->
+  <div class="layer layer--atmosphere" data-layer="atmosphere" data-actor="atmosphere"></div>
+
+  <!--
+    SHELF DARK — the end of the shot. Rises as the camera settles on the
+    cabinet so the finale reads against near-black rather than against
+    soft, over-enlarged pixels. scroll.js drives opacity.
+  -->
+  <div class="layer layer--shelf-dark" data-layer="shelf-dark" data-actor="shelf-dark"></div>
+
+  <!--
+    STORY — the scroll copy. Minimal: one short line at a time, surfacing
+    and dissolving as the camera moves. PLACEHOLDER copy (written against
+    SPEC v0.2's finite-canon idea) — swap freely.
+  -->
+  <div class="layer layer--story" data-layer="story">
+    <p class="story-line story-line--1" data-actor="story-line-1">every record worth hearing</p>
+    <p class="story-line story-line--2" data-actor="story-line-2">is somewhere on this shelf</p>
+  </div>
+
+  <!-- FINALE — the identity again, where the shot ends. ------------------ -->
+  <div class="layer layer--finale finale" data-layer="finale" data-actor="finale">
+    <h2 class="finale__name">[PRODUCT NAME]</h2>
+    <button class="cta" type="button" data-actor="finale-cta">
+      <span class="cta__arrow" aria-hidden="true">&#8594;</span>
+      <span class="cta__label">[PRIMARY ACTION]</span>
+    </button>
+  </div>
+
+  <!-- SCROLL CUE --------------------------------------------------------- -->
+  <p class="scroll-cue" data-layer="scroll-cue" data-actor="scroll-cue">scroll<span class="scroll-cue__chevron" aria-hidden="true">&#8595;</span></p>
+
+  <!-- GRAIN ------------------------------------------------------------ -->
+  <div class="layer layer--grain" data-layer="grain" data-actor="grain"></div>
+
+</div>
+
+</div>
+</div>
+
+</body>
+</html>

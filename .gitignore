@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# Tool debug renders (design/listening-room/tools write dbg-*.png in cwd)
+dbg-*.png
+
 # Python (the artwork retouch in design/listening-room/tools needs numpy+Pillow)
 venv/
 .venv/

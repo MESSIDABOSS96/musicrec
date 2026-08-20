@@ -1,9 +1,10 @@
 /* =========================================================================
-   LISTENING ROOM
-   Refactor of "Listening Room v2.dc.html". Visual output is unchanged;
-   every value below is carried over from the source.
+   LISTENING ROOM — DESKTOP
+   Landscape companion to ../styles.css, same architecture throughout.
 
-   Authored at 390x844. Values are absolute px in that coordinate space.
+   Authored at 1536x1024; scene px == artwork px. The whole scene scales
+   as one unit to fit the viewport, so every constant below survives any
+   window size.
    ========================================================================= */
 
 /* -------------------------------------------------------------------------
@@ -12,16 +13,17 @@
 
 :root {
   /* Scene geometry -------------------------------------------------------- */
-  --scene-w: 390px;
-  --scene-h: 844px;
+  --scene-w: 1536px;
+  --scene-h: 1024px;
+  /* One number scales the whole room; length/length division is unitless. */
+  --scene-scale: min(calc(100vw / 1536px), calc(100vh / 1024px));
 
   /* Surface --------------------------------------------------------------- */
-  --void: #060504;          /* page + scene ground */
-  --wall: #1b1512;          /* room wall reference tone */
+  --void: #060504;
 
   /* Ink ------------------------------------------------------------------- */
-  --ink-warm: #f0d2a2;                    /* product name */
-  --ink-dim: rgba(240, 210, 168, 0.72);   /* eyebrow */
+  --ink-warm: #f0d2a2;
+  --ink-dim: rgba(240, 210, 168, 0.72);
   --ink-tagline: rgba(238, 208, 166, 0.8);
 
   /* Ember — the single interactive accent ---------------------------------- */
@@ -32,29 +34,24 @@
   --ember-bloom-inner: rgba(224, 113, 44, 0.08);
   --ember-name-halo: rgba(255, 170, 80, 0.28);
 
-  /* Materials — multi-stop gradients kept whole, since each is one surface -- */
-  --material-glow-lamp-left: radial-gradient(
+  /* Materials ------------------------------------------------------------- */
+  --material-glow-lamp: radial-gradient(
     circle,
     rgba(255, 176, 74, 0.14) 0%,
     rgba(255, 150, 50, 0.05) 46%,
     rgba(0, 0, 0, 0) 72%
   );
-  --material-glow-lamp-right: radial-gradient(
+  --material-glow-candle: radial-gradient(
     circle,
-    rgba(255, 168, 66, 0.13) 0%,
-    rgba(255, 142, 44, 0.05) 46%,
+    rgba(255, 164, 70, 0.16) 0%,
+    rgba(255, 140, 50, 0.05) 48%,
     rgba(0, 0, 0, 0) 72%
   );
-  --material-glow-floor: radial-gradient(
-    circle,
-    rgba(255, 164, 70, 0.12) 0%,
-    rgba(0, 0, 0, 0) 70%
-  );
   --material-atmosphere: radial-gradient(
-    130% 88% at 46% 44%,
-    rgba(0, 0, 0, 0) 44%,
-    rgba(4, 2, 1, 0.34) 82%,
-    rgba(3, 2, 1, 0.6) 100%
+    92% 120% at 50% 44%,
+    rgba(0, 0, 0, 0) 46%,
+    rgba(4, 2, 1, 0.32) 82%,
+    rgba(3, 2, 1, 0.58) 100%
   );
   --material-grain: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%22160%22><filter id=%22g%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22/></filter><rect width=%22160%22 height=%22160%22 filter=%22url(%23g)%22/></svg>');
   --grain-opacity: 0.09;
@@ -63,7 +60,7 @@
   --font-body: 'Space Mono', monospace;
   --font-display: 'Silkscreen', monospace;
 
-  /* LAYER STACK — gaps are intentional, for inserting layers later --------- */
+  /* LAYER STACK ------------------------------------------------------------ */
   --z-art: 10;
   --z-identity: 30;
   --z-lighting: 40;
@@ -75,7 +72,7 @@
   --z-grain: 60;
 
   /* Scroll — how much page there is. The whole extent is one shot; longer
-     track = slower camera for the same flick of the thumb. */
+     track = slower camera for the same turn of the wheel. */
   --scroll-track-len: 560dvh;
 }
 
@@ -96,20 +93,16 @@ body {
 
 h1, p { margin: 0; font-weight: inherit; }
 
-a {
-  color: var(--ember);
-  text-decoration: none;
-}
-a:hover { color: var(--ember-hover); }
-
 /* -------------------------------------------------------------------------
    SCROLL TRACK + STAGE
 
    The track is the page's only height; the stage inside it is sticky and
    fills the viewport, so the scene stays put while the document scrolls
    underneath. scroll.js reads how far through the track we are and drives
-   the shot from it. The stage also centres the fixed-size scene on
-   viewports larger than the artboard (a no-op at exactly 390x844).
+   the shot from it. The stage also centres the scene and clips its phantom
+   layout box (the scene keeps its unscaled 1536x1024 box after the
+   fit-to-viewport scale) — the job body { overflow: hidden } used to do,
+   which had to go because the page must now scroll.
    ------------------------------------------------------------------------- */
 
 .scroll-track {
@@ -137,15 +130,16 @@ a:hover { color: var(--ember-hover); }
   overflow: hidden;
   background: var(--void);
   font-family: var(--font-body);
+  transform: scale(var(--scene-scale));
+  transform-origin: 50% 50%;
+  flex: none;
 }
 
-/* Full-bleed layer. Anything positioned inside works in scene coordinates. */
 .layer {
   position: absolute;
   inset: 0;
 }
 
-/* Only the identity layer is interactive; everything else is scenery. */
 .layer--art,
 .layer--lighting,
 .layer--atmosphere,
@@ -167,6 +161,7 @@ a:hover { color: var(--ember-hover); }
   matrix — art and lighting are the room; everything else is UI or lens and
   stays in screen space. Origin 0 0 so the transform works in plain scene
   coordinates: a world point P lands on screen at (scale * P + translate).
+  This composes under the scene's own fit-to-viewport scale, which wraps it.
 */
 .layer--art,
 .layer--lighting {
@@ -178,23 +173,17 @@ a:hover { color: var(--ember-hover); }
    ART
    ------------------------------------------------------------------------- */
 
-/* room-plate.png is room2.png prepared for motion: the background rebuilt
-   behind every swaying element's edges (tools/scenery/separate.py). */
+/* roomd-plate.png is roomd.png prepared for motion (tools/scenery.py). */
 .art-base {
   position: absolute;
   inset: 0;
-  background: url('assets/room-plate.png') center top / var(--scene-w) var(--scene-h) no-repeat;
+  background: url('assets/roomd-plate.png') center top / var(--scene-w) var(--scene-h) no-repeat;
 }
 
 /*
-  ART SLOTS
-  ---------
-  Each slot is one independently animatable illustration element, cut from
-  the plate by tools/scenery/separate.py, which also prints the geometry
-  below. --origin is the pivot each element sways about: the point where
-  it attaches, off the box entirely for the vines (they hang from above
-  the frame edge). At rest every cut covers its own rebuilt background and
-  the scene matches room2.png exactly.
+  ART SLOTS — geometry and pivots printed by tools/scenery.py and
+  tools/equalizer.py. --origin is where each element actually attaches:
+  above the frame for hanging vines, at the pot for rooted plants.
 */
 .art-slot {
   position: absolute;
@@ -205,19 +194,12 @@ a:hover { color: var(--ember-hover); }
   background-image: var(--art, none);
   background-repeat: no-repeat;
   background-size: 100% 100%;
-  /* Transforms should pivot on the element's own anchor, set per slot. */
   transform-origin: var(--origin, 50% 50%);
 }
 
-/* Empty placeholder — no art yet. */
-.art-slot--poster-wall { display: none; }
-
 /*
-  SWAY
-  ----
-  A fraction of a degree about the attach point, slow, ease-in-out,
-  alternating. The from/to angles are deliberately asymmetric and every
-  element runs its own detuned period with its own start offset, so the
+  SWAY — a fraction of a degree about the attach point, asymmetric
+  from/to, every element on its own detuned period and offset so the
   foliage never moves in lockstep and the ensemble never visibly loops.
 */
 @keyframes sway {
@@ -225,83 +207,80 @@ a:hover { color: var(--ember-hover); }
   to   { transform: rotate(var(--sway-to)); }
 }
 
-.art-slot--vine-window {
-  --x: 184.71px; --y: 71.86px; --w: 66.75px; --h: 265.47px;
-  --origin: 45.2% -32.2%;
-  --art: url('assets/vine-window.png');
+.art-slot--vine-left {
+  --x: 153px; --y: 23px; --w: 135px; --h: 220px;
+  --origin: 49.6% 0.9%;
+  --art: url('assets/vine-left.png');
   --sway-from: -0.9deg; --sway-to: 0.7deg;
-  animation: sway 7.9s ease-in-out -2.6s infinite alternate;
+  animation: sway 7.3s ease-in-out -2.1s infinite alternate;
 }
 
-.art-slot--vine-wall {
-  --x: 277.53px; --y: 172.10px; --w: 103.33px; --h: 220.15px;
-  --origin: 41.2% -15.8%;
-  --art: url('assets/vine-wall.png');
-  --sway-from: -0.7deg; --sway-to: 0.8deg;
-  animation: sway 6.7s ease-in-out -1.2s infinite alternate;
+.art-slot--shelf-fern {
+  --x: 247px; --y: 273px; --w: 93px; --h: 106px;
+  --origin: 57.0% 105.7%;
+  --art: url('assets/shelf-fern.png');
+  --sway-from: -0.5deg; --sway-to: 0.45deg;
+  animation: sway 5.9s ease-in-out -3.4s infinite alternate;
+}
+
+.art-slot--vine-center {
+  --x: 452px; --y: 1px; --w: 162px; --h: 508px;
+  --origin: 46.3% -0.2%;
+  --art: url('assets/vine-center.png');
+  --sway-from: -0.8deg; --sway-to: 0.65deg;
+  animation: sway 8.1s ease-in-out -0.7s infinite alternate;
+}
+
+.art-slot--vine-right {
+  --x: 1018px; --y: 76px; --w: 211px; --h: 488px;
+  --origin: 57.8% -3.7%;
+  --art: url('assets/vine-right.png');
+  --sway-from: -0.7deg; --sway-to: 0.75deg;
+  animation: sway 6.7s ease-in-out -4.9s infinite alternate;
+}
+
+.art-slot--vine-far-right {
+  --x: 1383px; --y: 48px; --w: 153px; --h: 394px;
+  --origin: 56.9% -2.0%;
+  --art: url('assets/vine-far-right.png');
+  --sway-from: -0.85deg; --sway-to: 0.7deg;
+  animation: sway 7.9s ease-in-out -1.6s infinite alternate;
 }
 
 .art-slot--plant-left {
-  --x: 0px; --y: 172.10px; --w: 114.30px; --h: 657.72px;
-  --origin: 30.0% 101.2%;
+  --x: 0px; --y: 203px; --w: 359px; --h: 821px;
+  --origin: 41.8% 97.3%;
   --art: url('assets/plant-left.png');
   --sway-from: -0.5deg; --sway-to: 0.4deg;
   animation: sway 10.3s ease-in-out -4s infinite alternate;
 }
 
+.art-slot--plant-mid {
+  --x: 463px; --y: 663px; --w: 177px; --h: 147px;
+  --origin: 50.3% 180.3%;
+  --art: url('assets/plant-mid.png');
+  --sway-from: -0.55deg; --sway-to: 0.5deg;
+  animation: sway 6.1s ease-in-out -2.8s infinite alternate;
+}
+
 .art-slot--plant-right {
-  --x: 277.53px; --y: 375.77px; --w: 112.47px; --h: 432.53px;
-  --origin: 62.2% 103.6%;
+  --x: 1266px; --y: 361px; --w: 270px; --h: 645px;
+  --origin: 60.0% 99.4%;
   --art: url('assets/plant-right.png');
   --sway-from: -0.45deg; --sway-to: 0.55deg;
   animation: sway 8.9s ease-in-out -6.5s infinite alternate;
 }
 
-/*
-  THE FLAME
-  ---------
-  A 10-frame drawn loop (tools/scenery/separate.py), played like film:
-  steps() snaps frame to frame, ~11fps. The sheet is 10 frames wide, so
-  background-size is 1000% and each step is exactly one slot width.
-*/
-.art-slot--candle-flame {
-  --x: 106.07px; --y: 551.07px; --w: 13.72px; --h: 22.89px;
-  --art: url('assets/flame-loop.png');
-  background-size: 1000% 100%;
-  animation: flame-lick 0.9s steps(10, end) infinite;
-}
-
-@keyframes flame-lick {
-  from { background-position-x: 0; }
-  to   { background-position-x: -137.2px; }   /* 10 x slot width */
+.art-slot--plant-cab {
+  --x: 1278px; --y: 486px; --w: 94px; --h: 94px;
+  --origin: 46.8% 78.7%;
+  --art: url('assets/plant-cab.png');
+  --sway-from: -0.6deg; --sway-to: 0.5deg;
+  animation: sway 4.9s ease-in-out -1.2s infinite alternate;
 }
 
 /*
-  THE LEVEL METER
-  ---------------
-  A 16-frame drawn loop (tools/scenery/equalizer.py): the stereo's
-  segmented display redrawn per frame, every bar riding its own closed
-  sinusoid on the receiver's sloped baseline. Frame 1 is the painting's
-  own levels. ~9fps — meters snap, they do not glide.
-*/
-.art-slot--eq-meter {
-  --x: 196.60px; --y: 703.94px; --w: 44.81px; --h: 28.38px;
-  --art: url('assets/eq-loop.png');
-  background-size: 1600% 100%;
-  animation: eq-dance 1.8s steps(16, end) infinite;
-}
-
-@keyframes eq-dance {
-  from { background-position-x: 0; }
-  to   { background-position-x: -716.91px; }  /* 16 x slot width */
-}
-
-/*
-  RECORD LAYERS
-  -------------
-  Full-bleed plates registered to the same box as the room art, so they need
-  no positioning of their own — each PNG is authored on the full canvas and
-  lands where it was cut from.
+  RECORD LAYERS — full-bleed plates registered to the artwork box.
 */
 .art-plate {
   position: absolute;
@@ -312,84 +291,42 @@ a:hover { color: var(--ember-hover); }
 }
 
 /*
-  THE SPINNING RECORD
-  -------------------
-  The disc is drawn in perspective, so its rim is an ellipse. Spinning an
-  ellipse with rotate() turns it about the screen's axes and the record
-  tumbles like a flipped coin. What we want is rotation about the record's
-  OWN axis, which in screen space is that rotation carried through the
-  foreshortening:
-
-      M . rotate(spin) . M-inverse        where M = rotate(tilt) . scaleY(k)
-
-  Read the three transforms below outermost-first and that is exactly what
-  they spell out: un-squash the ellipse back to the circle it really is,
-  turn it, then put the perspective back. The product is area-preserving and
-  maps the ellipse onto itself, so the silhouette never moves — which is what
-  keeps the disc covering its own copy baked into the plate underneath.
-
-  All three elements share the same box and the same origin, so their
-  origins coincide and the matrices compose cleanly about the spindle.
-
-  Geometry measured from the fitted rim in tools/vinyl/. The tilt is the
-  ellipse's own angle in scene space, which is not quite the value in the
-  source artwork because the two axes scale by slightly different factors.
+  THE SPINNING RECORD — same conjugated transform as mobile (see
+  ../styles.css for the derivation). Constants from tools/fit_ellipse.py
+  via tools/record.py. The desktop disc is more foreshortened (squash
+  0.282 vs mobile's 0.402).
 */
 :root {
-  --disc-spindle-x: 221.586px;   /* the rim ellipse's centre = the spindle */
-  --disc-spindle-y: 566.943px;
-  --disc-tilt: -3.2535deg;       /* major axis, in scene space */
-  --disc-squash: 0.402016;       /* B/A — the record sits 66.3deg off face-on */
-  --disc-revolution: 1.8s;       /* 33 1/3 RPM. The one knob for speed. */
+  --disc-spindle-x: 1110.188px;
+  --disc-spindle-y: 675.75px;
+  --disc-tilt: 3.425deg;
+  --disc-squash: 0.282023;
+  --disc-revolution: 1.8s;      /* 33 1/3 RPM */
 }
 
-/*
-  The spin angle is a registered property so it can be interpolated as an
-  angle rather than as text. That keeps the whole thing on ONE element: the
-  browser composes the five transforms into a single matrix and resamples the
-  artwork once. Splitting them across nested elements also works, but the
-  middle element rasterises in the un-squashed space and the result comes
-  back through a 2.49x vertical resample — measurably softer, and it showed
-  up as a 51-level error at the rim where the static composite had 25.
-*/
 @property --disc-spin {
   syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
 }
 
-/*
-  The image that turns is NOT vinyl.png but its symmetrized derivative:
-  every ring averaged flat, sheen and glints lifted out into the static
-  vinyl-light layer above, alpha faded out just inside the rim. Rotating
-  the raw cut makes its baked lighting orbit the disc, which reads as a
-  sticker spinning on top of the scene. tools/vinyl/symmetrize.py builds
-  both layers and documents the split.
-*/
 .art-plate--vinyl {
   background-image: url('assets/vinyl-rotating.png');
   transform-origin: var(--disc-spindle-x) var(--disc-spindle-y);
-
-  /* read bottom-up: un-squash to a circle, turn, put the perspective back */
   transform:
     rotate(var(--disc-tilt))
     scaleY(var(--disc-squash))
     rotate(var(--disc-spin))
     scaleY(calc(1 / var(--disc-squash)))
     rotate(calc(-1 * var(--disc-tilt)));
-
   animation: disc-spin var(--disc-revolution) linear infinite;
 }
 
-/* A whole turn, so the loop closes on itself with nothing to blend. */
 @keyframes disc-spin {
   from { --disc-spin: 0deg; }
   to   { --disc-spin: 360deg; }
 }
 
-/* The disc's sheen and shading, exactly as painted, held still while the
-   surface turns underneath. The marks on the rotating layer pass under it
-   and dim where the light is strong, as detail under a reflection does. */
 .art-plate--vinyl-light {
   background-image: url('assets/vinyl-light.png');
 }
@@ -398,16 +335,55 @@ a:hover { color: var(--ember-hover); }
   background-image: url('assets/deck-over.png');
 }
 
+/*
+  DRAWN LOOPS — flames at ~11fps, the meter at ~9fps, steps() so frames
+  snap like film. background-size stretches each sheet to N frames wide.
+*/
+.art-slot--flame-main {
+  --x: 893px; --y: 664px; --w: 36px; --h: 38px;
+  --art: url('assets/flame-main.png');
+  background-size: 1000% 100%;
+  animation: flame-main-lick 0.9s steps(10, end) infinite;
+}
+
+@keyframes flame-main-lick {
+  from { background-position-x: 0; }
+  to   { background-position-x: -360px; }    /* 10 x slot width */
+}
+
+.art-slot--flame-shelf {
+  --x: 231px; --y: 354px; --w: 30px; --h: 32px;
+  --art: url('assets/flame-shelf.png');
+  background-size: 1000% 100%;
+  animation: flame-shelf-lick 1.1s steps(10, end) infinite;
+}
+
+@keyframes flame-shelf-lick {
+  from { background-position-x: 0; }
+  to   { background-position-x: -300px; }    /* 10 x slot width */
+}
+
+.art-slot--eq-meter {
+  --x: 1040px; --y: 848px; --w: 96px; --h: 56px;
+  --art: url('assets/eq-loop.png');
+  background-size: 1600% 100%;
+  animation: eq-dance 1.8s steps(16, end) infinite;
+}
+
+@keyframes eq-dance {
+  from { background-position-x: 0; }
+  to   { background-position-x: -1536px; }   /* 16 x slot width */
+}
+
 /* -------------------------------------------------------------------------
    IDENTITY
    ------------------------------------------------------------------------- */
 
 .identity {
-  /* Overrides .layer's full-bleed inset: this is a positioned block. */
   inset: auto;
-  left: 51px;
+  left: 578px;
   top: 372px;
-  width: 250px;
+  width: 296px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -415,7 +391,7 @@ a:hover { color: var(--ember-hover); }
 }
 
 .identity__eyebrow {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -423,23 +399,23 @@ a:hover { color: var(--ember-hover); }
 }
 
 .identity__name {
-  margin-top: 9px;
+  margin-top: 11px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 21px;
+  font-size: 27px;
   line-height: 1;
   letter-spacing: 0.02em;
   white-space: nowrap;
   color: var(--ink-warm);
   text-shadow:
-    0 0 12px var(--ember-name-halo),
+    0 0 14px var(--ember-name-halo),
     0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
 .identity__tagline {
-  margin-top: 12px;
-  font-size: 11px;
-  line-height: 1.28;
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.3;
   color: var(--ink-tagline);
 }
 
@@ -448,7 +424,6 @@ a:hover { color: var(--ember-hover); }
    ------------------------------------------------------------------------- */
 
 .cta {
-  /* Button reset — the source used a div; the rendered box is identical. */
   appearance: none;
   -webkit-appearance: none;
   background: none;
@@ -456,26 +431,36 @@ a:hover { color: var(--ember-hover); }
   font: inherit;
   margin: 0;
 
-  margin-top: 12px;
+  margin-top: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 13px;
+  gap: 9px;
+  padding: 8px 16px;
   border: 1.5px solid var(--ember-line);
   box-shadow:
     0 0 14px var(--ember-bloom-outer),
     inset 0 0 12px var(--ember-bloom-inner);
   color: var(--ember);
   cursor: pointer;
+  transition: color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Desktop has a pointer: let the ember answer it. */
+.cta:hover {
+  color: var(--ember-hover);
+  border-color: var(--ember-hover);
+  box-shadow:
+    0 0 20px rgba(243, 163, 102, 0.22),
+    inset 0 0 14px rgba(243, 163, 102, 0.12);
 }
 
 .cta__arrow {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1;
 }
 
 .cta__label {
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   line-height: 1;
@@ -490,18 +475,6 @@ a:hover { color: var(--ember-hover); }
    LIGHTING
    ------------------------------------------------------------------------- */
 
-/*
-  LIVE LIGHT
-  ----------
-  Each glow's opacity is the product of two registered scalars, each driven
-  by its own keyframe track. The two periods share no small common multiple,
-  so the product wanders for minutes before repeating — a single sine reads
-  as a machine breathing; the beat of two does not.
-
-  The bulbs get a barely-there waver (incandescents are steady). The candle
-  gets real movement: its keyframes are jagged on purpose, because flame
-  does not ease — it snaps.
-*/
 @property --flicker-a {
   syntax: '<number>';
   inherits: false;
@@ -549,37 +522,44 @@ a:hover { color: var(--ember-hover); }
   72%      { --flicker-b: 0.85; }
 }
 
-.glow--lamp-left {
-  left: 46px;
-  top: 46px;
-  width: 130px;
-  height: 130px;
-  background: var(--material-glow-lamp-left);
+.glow--lamp-dome {
+  left: 310px;
+  top: 45px;
+  width: 180px;
+  height: 180px;
+  background: var(--material-glow-lamp);
   animation: lamp-breathe 6.1s ease-in-out infinite,
              lamp-waver 3.7s ease-in-out infinite;
 }
 
-.glow--lamp-right {
-  left: 236px;
-  top: 78px;
-  width: 138px;
-  height: 138px;
-  background: var(--material-glow-lamp-right);
-  /* Same tracks as the left lamp, offset and detuned so the two bulbs
-     never pulse together. */
+.glow--lamp-cage {
+  left: 1028px;
+  top: 70px;
+  width: 180px;
+  height: 180px;
+  background: var(--material-glow-lamp);
   animation: lamp-breathe 5.3s ease-in-out -1.7s infinite,
              lamp-waver 4.3s ease-in-out -0.9s infinite;
 }
 
-/* This glow sits on the candle. */
-.glow--floor {
-  left: 78px;
-  top: 526px;
+.glow--candle-main {
+  left: 863px;
+  top: 647px;
   width: 96px;
   height: 96px;
-  background: var(--material-glow-floor);
+  background: var(--material-glow-candle);
   animation: candle-dance 2.3s ease-in-out infinite,
              candle-gutter 1.5s ease-in-out infinite;
+}
+
+.glow--candle-shelf {
+  left: 211px;
+  top: 337px;
+  width: 70px;
+  height: 70px;
+  background: var(--material-glow-candle);
+  animation: candle-dance 2.7s ease-in-out -0.9s infinite,
+             candle-gutter 1.7s ease-in-out -0.4s infinite;
 }
 
 /* -------------------------------------------------------------------------
@@ -588,12 +568,6 @@ a:hover { color: var(--ember-hover); }
 
 .layer--atmosphere { background: var(--material-atmosphere); }
 
-/*
-  The grain resamples ~11 times a second, like film. steps(1, end) holds
-  each frame and snaps to the next — any easing here would read as the
-  noise SLIDING, which is exactly the artifact this must not have. The
-  offsets are arbitrary non-repeating jumps within the 160px tile.
-*/
 .layer--grain {
   opacity: var(--grain-opacity);
   mix-blend-mode: overlay;
@@ -624,7 +598,7 @@ a:hover { color: var(--ember-hover); }
    in a pool of black rather than on a flat fill. */
 .layer--shelf-dark {
   background: radial-gradient(
-    130% 96% at 50% 46%,
+    96% 120% at 50% 46%,
     rgba(6, 5, 4, 0.86) 0%,
     rgba(6, 5, 4, 0.97) 64%,
     var(--void) 100%
@@ -641,7 +615,7 @@ a:hover { color: var(--ember-hover); }
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 12px;
+  font-size: 15px;
   letter-spacing: 0.08em;
   color: var(--ink-tagline);
   text-shadow:
@@ -651,16 +625,16 @@ a:hover { color: var(--ember-hover); }
   visibility: hidden;
 }
 
-.story-line--1 { top: 168px; }
-.story-line--2 { top: 196px; }
+.story-line--1 { top: 286px; }
+.story-line--2 { top: 320px; }
 
 /* The identity again, where the shot ends — same box as .identity so the
    name returns to the spot it left. */
 .finale {
   inset: auto;
-  left: 51px;
+  left: 578px;
   top: 372px;
-  width: 250px;
+  width: 296px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -672,27 +646,27 @@ a:hover { color: var(--ember-hover); }
 .finale__name {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 24px;
   line-height: 1;
   letter-spacing: 0.02em;
   white-space: nowrap;
   color: var(--ink-warm);
   text-shadow:
-    0 0 12px var(--ember-name-halo),
+    0 0 14px var(--ember-name-halo),
     0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
-.finale .cta { margin-top: 16px; }
+.finale .cta { margin-top: 18px; }
 
 /* The invitation. Gone within the first few percent of the track. */
 .scroll-cue {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 22px;
+  bottom: 30px;
   z-index: var(--z-cue);
   text-align: center;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--ink-dim);
@@ -701,15 +675,15 @@ a:hover { color: var(--ember-hover); }
 
 .scroll-cue__chevron {
   display: block;
-  margin-top: 6px;
-  font-size: 11px;
+  margin-top: 7px;
+  font-size: 13px;
   letter-spacing: 0;
   animation: cue-drift 1.9s ease-in-out infinite alternate;
 }
 
 @keyframes cue-drift {
   from { transform: translateY(0); }
-  to   { transform: translateY(5px); }
+  to   { transform: translateY(6px); }
 }
 
 /* -------------------------------------------------------------------------
