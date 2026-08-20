@@ -4,6 +4,14 @@
 > written; a first landing-page exploration exists at
 > `design/explorations/golden-hour-landing.html`.
 >
+> **v0.2 rescope note (2026-08-19):** the aesthetic direction and all
+> teardown findings survive the rescope untouched. What changed is the
+> *structural* metaphor — the constellation map is retired; the journey now
+> reads as **room-to-room / level-to-level progression à la Super Mario
+> world maps**: a drawn path through named regions (chapters/wings),
+> completed rooms behind you, the current room lit, the road ahead visible
+> but not yet open. The surface inventory below is updated accordingly.
+>
 > Final deliverable: a `DESIGN.md` design system (tokens, type, color,
 > motion, components) in Google's DESIGN.md format.
 
@@ -12,9 +20,7 @@
 The palette and mood come from the user's reference images in
 `design/inspiration/`: vinyl on a wood table in low sun, a sunset café
 turntable, an amber phosphor car-stereo display ("TRACK 06"), lofi-anime
-sunset street scenes. NOT the daytime-cream Close Friends look — the
-*structure* of that reference survives (floating orbs, organic
-constellation, no drawn edges), but the world is dusk:
+sunset street scenes. The world is dusk:
 
 - **Ground:** warm-dark ramp — deep plum-brown through burnt sienna to
   amber; silhouettes in warm near-black (never pure black), sky/sun glow as
@@ -28,9 +34,9 @@ constellation, no drawn edges), but the world is dusk:
   choices TBD in the tokens pass.
 - **Texture/motion:** film grain, glow, slow breathing/drift; flicker used
   sparingly (string-light bulbs). Sunset→night as a narrative axis: golden
-  hour for arrival/landing, deep night for the constellation map.
+  hour for arrival/landing, deep night for the journey map.
 - **First-second feeling (decided):** "this is mine" + curiosity/pull —
-  intimacy first, with the frontier visibly calling.
+  intimacy first, with the road ahead visibly calling.
 - **Color modes:** single-world, dark-warm by nature. No light/dark
   toggle — the app lives at dusk. (Revisit only if legibility testing
   demands it.)
@@ -55,31 +61,39 @@ constellation, no drawn edges), but the world is dusk:
   a record of what not to do. The one salvageable part is the copy voice:
   "Your taste is a place." and the TRACK 01 / TRACK 02 tracklist labels.
 
-## What the design system must cover (inventory from other specs)
+## What the design system must cover (inventory from other specs, v0.2)
 
 Surfaces:
-- [ ] The map (home) — including desktop's wider canvas
-- [ ] Artist detail view (facet songs, reactions, explore-this-direction)
-- [ ] Onboarding duel screens + the map-reveal moment (the emotional hook)
-- [ ] Empty/loading/limit states (daily cap reached, frontier decay if adopted)
+- [ ] The journey view (home) — the Mario-style path: chapters as regions,
+      rooms as stops, current room lit; desktop's wider canvas
+- [ ] The room view — album in hand: cover, curator narration, blurb,
+      link-out, reactions, the secondary "different door" pass
+- [ ] Onboarding duel screens + the ending transition (curator introduces
+      itself → Chapter 1 named → first album handed over — the emotional hook)
+- [ ] The Board (topster) + its image export
+- [ ] Journey history / chapter recap
+- [ ] Empty/loading states, journey-complete state
 
 States & moments needing distinct visual treatment (contract: 00-foundations):
-- [ ] Node states: Seeded / Frontier / Explored / Known / Blurred
-- [ ] Cluster identity — how neighborhoods read as neighborhoods
-- [ ] Unlock moment — new frontier artists appearing (paced, scarce, an event)
-- [ ] Blur-out moment — a dislike settling into visited ground (must not feel
-      like punishment)
+- [ ] Album states: Unvisited / In hand / Liked / Not for me / Already knew / Passed
+- [ ] Chapter identity — how a themed leg reads as a region of the world
+- [ ] The handoff moment — the curator giving you the next album (paced, an event)
+- [ ] Chapter-complete moment
+- [ ] "Not for me" settling into visited ground (must not feel like punishment)
+- [ ] Coverage — how "127 of 1,043" is always felt but never gamey
 
 ## To figure out in the design session
 
 - The full visual identity: palette, type, texture, motion language
-- How "known territory" reads vs "explored" vs "frontier" at a glance
-- Whether clusters get labels or stay purely spatial (shared with 03)
-- Desktop layout philosophy (same map, wider — how?)
+- The journey-map grammar: how far ahead is visible, how closed rooms look,
+  how wings/regions read at a glance
+- The curator's visual presence/voice (a character? a typographic voice only?)
+- Desktop layout philosophy (same journey, wider — how?)
 - Name + wordmark (shared with 00)
 
 ## Session plan
 
 Run the design interview (the `design-md-planner` skill fits this exactly:
 it interviews for taste, commits to a referenced aesthetic, and produces a
-lint-clean DESIGN.md). Bring the Close Friends screenshots.
+lint-clean DESIGN.md). Bring the lofi references and a couple of Super Mario
+world-map screenshots for the journey structure.

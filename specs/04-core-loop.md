@@ -1,46 +1,60 @@
-# 04 — Core loop: artist detail, listening & reactions
+# 04 — Core loop: the room, listening, reactions & the board
 
-> Status: **shape decided, details unspecced.** Everything between tapping a
-> node and the map updating — plus the leftover product decisions that don't
-> belong to onboarding or expansion.
+> Status: **shape decided (v0.2 rescope, 2026-08-19), details unspecced.**
+> Everything between the curator handing over an album and the journey
+> advancing — plus persistence and the leftover product decisions that
+> don't belong to onboarding or the journey. Replaces v0.1's artist-detail
+> / facet-songs version of this spec (facet songs are retired: the album
+> itself is the unit of listening).
 
 ## Decided
 
-- Tapping any artist opens a small, intentional **detail view**: facet songs
-  + reaction controls + (for liked/known artists) "explore this direction".
-- **Facet songs**: a handful of songs chosen to show the artist's different
-  sides — not top hits. The point is letting the user find *which side* of
-  an artist they connect with. Intentional, not overwhelming.
-- **Pure link-out** — every song deep-links to the user's streaming app;
-  musicrec plays no audio.
-- Reactions: **Liked / Not for me / Already knew** — honor-system,
-  post-listen, and the only engagement currency.
+- **The room view** is the app's center: the album in hand — cover, artist,
+  year, the curator's narration ("why this, why now"), a short
+  what-this-is blurb, and the actions.
+- **Pure link-out** — one tap opens the album in the user's streaming
+  app; musicrec plays no audio.
+- **Reactions: Liked / Not for me / Already knew** — honor-system,
+  post-listen, the only gate to the next room.
+- **Pass** — "not today, show me a different door" — available on every
+  room, visually secondary to the reactions, records no taste signal.
+- **The Board** — the user's topster assembles from Liked albums and is
+  exportable as an image (view-only artifact, not a social feature).
+- Coverage ("127 of 1,043") and chapter progress are always visible at a
+  glance from the journey view.
 
 ## To spec
 
-1. **Facet definition & count** — how many songs (lean: 3–5), what a "facet"
-   is (era? sound? energy?), and how facets are curated (ties to
-   05-data-layer: LLM-curated vs. data-derived).
-2. **Detail view content** — beyond songs + reactions: blurb? why-this-artist
-   ("because you liked X")? cluster context? Keep minimal — decide what earns
-   a place.
-3. **Link-out targets** — which services (Spotify / Apple Music / YouTube),
-   whether the user sets a preferred one once, URL schemes/deep-link format.
-4. **Reaction timing** — react anytime, or only after tapping out to listen?
-   Can a reaction be changed later? (Lean: changeable — taste evolves.)
-5. **Partial states** — "listened to one facet, want to come back": is there
-   a save-for-later, or does frontier state itself serve as the to-listen
-   list? (Lean: the latter — no extra lists.)
-6. **Known-artist detail view** — what does tapping an already-Known artist
-   show? (They're anchors, so at minimum: explore-this-direction.)
+1. **Room view content** — exactly what earns a place beyond
+   cover/narration/blurb/actions: tracklist? runtime? "part of Chapter:
+   …" context? Keep minimal — one screen, no scroll (lean).
+2. **Link-out targets** — which services (Spotify / Apple Music / YouTube
+   Music), whether the user sets a preferred one once, album-level URL
+   schemes/deep-link format, fallback when an album is missing from a
+   service.
+3. **Reaction timing & mutability** — react anytime or only after tapping
+   out? (lean: anytime — honor system either way). Can a reaction be
+   changed later? (lean: changeable — taste evolves; state transitions
+   must stay consistent with 00-foundations).
+4. **Partially heard** — "listened to half, want to sit with it": is
+   in-hand state alone the to-listen list (lean: yes — no extra lists), or
+   is there any explicit save-for-later beyond Pass?
+5. **The Board mechanics** — auto-assembled (chronological? ranked?) vs.
+   user-arranged; grid sizes (3×3 / 5×5 / 10×10); export format; when a
+   user un-likes an album.
+6. **Journey history view** — how visited rooms (including Not-for-me as
+   visited ground) are browsable; per-chapter recap.
 7. **Persistence & accounts** (owns foundation's open question) —
-   anonymous-first localStorage vs. accounts day one; export/backup of the
-   map; multi-device.
-8. **Everything-else sweep** — settings surface (streaming preference),
-   about/empty states, share-a-screenshot of map (view-only, not social).
+   anonymous-first localStorage vs. accounts day one; export/backup of
+   journey state; multi-device.
+8. **Everything-else sweep** — settings (streaming preference), about
+   page, empty/loading states, the journey-complete state.
 
 ## Contracts
 
-- Consumes: facet songs + metadata + link-out URLs from **05-data-layer**.
-- Produces: reactions consumed by **03-expansion** and the taste model;
-  detail-view surface designed in **01-design-system**.
+- Consumes: the album in hand + narration + chapter context from
+  **03-journey**; album metadata, blurbs, and link-out URLs from
+  **05-canon**.
+- Produces: reactions and passes consumed by **03-journey**; album state
+  transitions per **00-foundations**; the room view, journey view, and
+  Board designed in **01-design-system**.
